@@ -893,9 +893,8 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
 
         /* TESTING ALL NODES SOCKET */
         socket.on('test-web', (data) => {
-            // socket.emit('', {});
-            var clients = io.sockets.clients();
-            console.log(clients);
+            const clients = io.sockets.clients();
+            socket.emit('resultado-test', clients);
         });
         /* FIN TESTING ALL NODES SOCKET */
 
