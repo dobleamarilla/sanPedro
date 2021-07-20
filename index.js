@@ -5,7 +5,7 @@ const modSocket = require('./sockets');
 const app       = express();
 
 //SETTINGS
-app.set('port', process.env.PORT || 8080);
+app.set('port', process.env.PORT || 8081);
 app.set('Set-Cookie', 'HttpOnly;Secure;SameSite=Strict');
 //STATIC FILES
 app.use(express.static(path.join(__dirname, 'public')));
