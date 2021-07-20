@@ -800,11 +800,18 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
             }
         });
 
-        /* ACTUALIZAR TOC */
+        /* ACTUALIZAR TOC INDIVIDUAL */
         socket.on('peticion-actualizar-toc', (stringLicencia) => {
             io.emit('orden-actualizar-toc', stringLicencia);
         });
-        /* FIN ACTUALIZAR TOC*/
+        /* FIN ACTUALIZAR TOC INDIVIDUAL */
+
+        /* ACTUALIZAR TOC ALL */
+        socket.on('peticion-actualizar-toc-all', () => {
+            io.emit('orden-actualizar-toc-all', 'ACTUALIZAR');
+        });
+        /* FIN ACTUALIZAR TOC ALL */
+
         /* DESCARGAR ARTÍCULOS */
         socket.on('descargar-articulos', (data) => {
             conexion.recHit(data.database, 'SELECT Codi as id, NOM as nombre, PREU as precioConIva, TipoIva as tipoIva, EsSumable as aPeso, Familia as familia, ISNULL(PreuMajor, 0) as precioBase FROM Articles').then(resSQL => {
@@ -883,6 +890,14 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
             });
         });
         /* FIN DESCARGAR FAMILIAS */
+
+        /* TESTING ALL NODES SOCKET */
+        socket.on('test-web', (data) => {
+            // socket.emit('', {});
+            var clients = io.sockets.clients();
+            console.log(clients);
+        });
+        /* FIN TESTING ALL NODES SOCKET */
 
         /* DESCARGAR TECLADO */
         socket.on('descargar-teclado', async (data) => {
