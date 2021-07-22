@@ -1,3 +1,57 @@
+const { Variant } = require("mssql");
+const conexion  = require('./conexion');
+
+function getSocketIdFromArrayTpv(arrayTPV, tokenBusqueda) {
+    for (let i = 0; i < arrayTPV.length; i++) {
+        if (arrayTPV[i].token == tokenBusqueda) {
+            return arrayTPV[i].id;
+        }
+    }
+    return -1;;
+}
+
+function getNodosSanPedro(arrayTPV) {
+    var devolver = new Promise((dev, rej) => {
+        conexion.recHit('Hit', 'SELECT nombreTienda, ultimaConexion, token, 0 as online FROM tocGameInfo').then((data) => {
+            let listaCompletaTPV = data.recordset;
+            let listaPublica = [];
+            for (let i = 0; i < arrayTPV.length; i++) {
+                for (let j = 0; j < listaCompletaTPV.length; j++) {
+                    if (listaCompletaTPV[j].token == arrayTPV[i].token) { //COINCIDE EL TOKEN DE LA BBDD CON EL ENVIADO
+                        listaCompletaTPV[j].online = true; //ESTÁ ONLINE
+                        break;
+                    }
+                }
+            }
+            //AHORA listaCompletaTPV ya tiene todos los TPV online y offline
+
+            for (let i = 0; i < listaCompletaTPV.length; i++) {
+                if (listaCompletaTPV[i].token != 'tpv-gestion') {
+                    if (listaCompletaTPV[i].online) {
+                        listaPublica.push({
+                            id: listaPublica.length,
+                            online: true,
+                            nombreTienda: listaCompletaTPV[i].nombreTienda,
+                            ultimaConexion: 0,
+                            socketId: getSocketIdFromArrayTpv(arrayTPV, listaCompletaTPV[i].token)
+                        });
+                    } else { //SI NO ESTÁ ONLINE
+                        listaPublica.push({
+                            id: listaPublica.length,
+                            online: false,
+                            nombreTienda: listaCompletaTPV[i].nombreTienda,
+                            ultimaConexion: listaCompletaTPV[i].ultimaConexion,
+                            socketId: ''
+                        });
+                    }
+                }
+            }
+
+            dev(listaPublica);
+        });        
+    });
+    return devolver;
+}
 
 function configurarTarifasEspeciales(articulos, arrayTarifasEspeciales) {
     if (arrayTarifasEspeciales.length > 0) /* APLICAR TARIFAS ESPECIALES */ {
@@ -67,48 +121,33 @@ async function familiasPorObjetos(res5, database, codigoCliente, conexion)
     }
     return res5;
 }
+
+var arrayTPV = [];
+
+// setInterval(function() { 
+//     console.log(arrayTPV[0].ultimaConexion);
+//   }, 3000);
+
 function loadSockets(io, conexion) // Se devuelve data.recordset !!!
 {
     setInterval(sincronizarClientes, 7300000, io);
     setInterval(sincronizarTeclados, 7200000, io);
     setInterval(sincronizarTrabajadores, 7200000, io);
     io.on('connection', (socket) => {
-        /* TEST */
-        socket.on('eze-test', (data) => {
-            var testSQL =
-                `
-                DECLARE @ultimaFecha datetime
-                DECLARE @ultimaFechaApuntada datetime
-                SELECT @ultimaFecha = MAX(Fecha) FROM GDT_StPedro WHERE tipo = 'Articles' and Empresa = 'Fac_Tena'
-                IF EXISTS (SELECT * FROM ultimasSanpedro WHERE licencia = 819 and Articulos IS NOT NULL) 
-                BEGIN
-                    SELECT @ultimaFechaApuntada = articulos FROM ultimasSanpedro WHERE licencia = 819
-                    IF @ultimaFecha > @ultimaFechaApuntada
-                    BEGIN
-                        UPDATE ultimasSanpedro SET articulos = GETDATE() WHERE licencia = 819
-                        SELECT 'Hay que actualizar' as resultado
-                    END
-                    ELSE
-                    BEGIN
-                        SELECT 'Nada que hacer' as resultado
-                    END
-                END
-                ELSE
-                BEGIN
-					IF EXISTS (SELECT * FROM ultimasSanpedro WHERE licencia = 819)
-					BEGIN
-						UPDATE ultimasSanpedro SET articulos = @ultimaFecha WHERE licencia = 819
-					END
-					ELSE
-					BEGIN
-						INSERT INTO ultimasSanpedro (empresa, licencia, articulos) VALUES ('Fac_Tena', 819, @ultimaFecha)
-					END
-					SELECT 'Hay que actualizar' as resultado
-                END
-            `;
-            conexion.recHit('Hit', testSQL).then(res => {
-                console.log('La última fecha es: ', res);
+        if (typeof socket.handshake.query['token'] !== "undefined") {
+            arrayTPV.push({
+                id: socket.id, 
+                token: socket.handshake.query['token']
             });
+        }
+
+        getNodosSanPedro(arrayTPV).then((lista) => {
+            for (let i = 0; i < arrayTPV.length; i++) {
+                if (arrayTPV[i].token == 'tpv-gestion') {
+                    io.to(arrayTPV[i].id).emit('getNodosSanPedro', lista);
+                    break;
+                }
+            }                
         });
 //-----------------------------------------------------------------
         socket.on('comprobarClienteVIP', data=>{
@@ -153,7 +192,6 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
 //------------------------------------------------------------------
         socket.on('sincronizar-tickets-tocgame', async (data)=>{
             try{
-                console.log("LLEGA")
                 for(let j = 0; j < data.arrayTickets.length; j++)
                 {
                     let sql = '';
@@ -247,25 +285,29 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
                     `
 
                     conexion.recHit(data.parametros.database, sql).then(res => {
-                        // console.log("Rows affected: ", res.rowsAffected.length)
-                        if(res.rowsAffected.length > 0){
+
+                        if(res.rowsAffected.length > 0) {
                             socket.emit('confirmarEnvioTicket', {
                                 idTicket: data.arrayTickets[j]._id,
                                 respuestaSql: res
                             });
-                            let sql2 = `IF EXISTS (SELECT * FROM tocGame_idTickets WHERE licencia = ${data.parametros.licencia}) 
-                                    BEGIN
-                                        IF ((SELECT ultimoIdTicket FROM tocGame_idTickets WHERE licencia = ${data.parametros.licencia}) < ${data.arrayTickets[j]._id})
-                                        BEGIN
-                                            UPDATE tocGame_idTickets SET ultimoIdTicket = ${data.arrayTickets[j]._id} WHERE licencia = ${data.parametros.licencia}
-                                        END
-                                    END
-                                    ELSE
-                                    BEGIN
-                                        INSERT INTO tocGame_idTickets (licencia, bbdd, ultimoIdTicket) VALUES (${data.parametros.licencia}, '${data.parametros.database}', ${data.arrayTickets[j]._id})
-                                    END`;
+                            let sql2 = `IF EXISTS (SELECT * FROM tocGameInfo WHERE licencia = ${data.parametros.licencia}) 
+                                            BEGIN
+                                                IF ((SELECT ultimoIdTicket FROM tocGameInfo WHERE licencia = ${data.parametros.licencia}) < ${data.arrayTickets[j]._id})
+                                                    BEGIN
+                                                        UPDATE tocGameInfo SET ultimoIdTicket = ${data.arrayTickets[j]._id}, ultimaConexion = ${Date.now()}, nombreTienda = '${data.parametros.nombreTienda}' WHERE licencia = ${data.parametros.licencia}
+                                                    END
+                                                END
+                                        ELSE
+                                            BEGIN
+                                                INSERT INTO tocGameInfo (licencia, bbdd, ultimoIdTicket, codigoInternoTienda, nombreTienda, token, version, ultimaConexion) 
+                                                    VALUES (${data.parametros.licencia}, '${data.parametros.database}', ${data.arrayTickets[j]._id}, ${data.parametros.codigoTienda}, '${data.parametros.nombreTienda}', NEWID(), '2.0.0', ${Date.now()})
+                                            END`;
+                            
                             conexion.recHit('Hit', sql2);
                         }
+                    }).catch((err) => {
+                        console.log(err);
                     });
                 }
             } catch(err){
@@ -761,11 +803,11 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
         /* COMPROBAR E INSTALAR LICENCIA */
         socket.on('install-licencia', (data) => {
             if (data.password == 'LOperas93786') {
-                const sqlParaImprimir = `SELECT ll.Llicencia, ll.Empresa, ll.LastAccess, we.Db, ISNULL(ti.ultimoIdTicket, 0) as ultimoIdTicket FROM llicencies ll LEFT JOIN Web_Empreses we ON ll.Empresa = we.Nom LEFT JOIN tocGame_idTickets ti ON ti.licencia = ${data.numLicencia} WHERE ll.Llicencia = ${data.numLicencia}`;
+                const sqlParaImprimir = `SELECT ll.Llicencia, ll.Empresa, ll.LastAccess, we.Db, ISNULL(ti.ultimoIdTicket, 0) as ultimoIdTicket, ti.token FROM llicencies ll LEFT JOIN Web_Empreses we ON ll.Empresa = we.Nom LEFT JOIN tocGameInfo ti ON ti.licencia = ${data.numLicencia} WHERE ll.Llicencia = ${data.numLicencia}`;
                 
                 conexion.recHit('Hit', sqlParaImprimir).then(function (data) {
                     const sqlParaImprimir2 = `SELECT Nom, Codi as codigoTienda FROM clients WHERE Codi = (SELECT Valor1 FROM ParamsHw WHERE Codi = ${data.recordset[0].Llicencia})`;
-                    console.log("La sql es: ", sqlParaImprimir2);
+                    
                     conexion.recHit(data.recordset[0].Db, sqlParaImprimir2).then(data2 => {
                         if (data.recordset.length === 1) {
                             conexion.recHit(data.recordset[0].Db, `SELECT Valor FROM paramstpv WHERE CodiClient = ${data.recordset[0].Llicencia} AND (Variable = 'BotonsPreu' OR Variable = 'ProhibirCercaArticles')`).then(dataF => {
@@ -778,7 +820,8 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
                                     codigoTienda: data2.recordset[0].codigoTienda,
                                     ultimoTicket: data.recordset[0].ultimoIdTicket,
                                     botonesConPrecios: dataF.recordset[0].Valor,
-                                    prohibirBuscarArticulos: dataF.recordset[1].Valor
+                                    prohibirBuscarArticulos: dataF.recordset[1].Valor,
+                                    token: data.recordset[0].token
                                 });
                             })
                             
@@ -891,12 +934,37 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
         });
         /* FIN DESCARGAR FAMILIAS */
 
-        /* TESTING ALL NODES SOCKET */
-        socket.on('test-web', (data) => {
-            const clients = io.sockets.clients();
-            socket.emit('resultado-test', Object.keys(clients));
+        //DESCONEXIÓN
+        socket.on('disconnect', async function() {
+            for (let i = 0; i < arrayTPV.length; i++) { 
+                if (arrayTPV[i].id === socket.id) { 
+                    await conexion.recHit('Hit', `UPDATE tocGameInfo SET ultimaConexion = ${Date.now()} WHERE token = '${arrayTPV[i].token}'`);
+                    arrayTPV.splice(i, 1);
+                    break;
+                }            
+            }
+            getNodosSanPedro(arrayTPV).then((lista) => {
+                for (let i = 0; i < arrayTPV.length; i++) {
+                    if (arrayTPV[i].token == 'tpv-gestion') {
+                        io.to(arrayTPV[i].id).emit('getNodosSanPedro', lista);
+                        break;
+                    }
+                }                
+            });
+        })
+
+        /* GET NODOS & IDENTIFICACIÓN DE LOS TPV */
+        socket.on('getNodosSanPedro', () => {
+            getNodosSanPedro(arrayTPV).then((lista) => {
+                for (let i = 0; i < arrayTPV.length; i++) {
+                    if (arrayTPV[i].tpv == 'tpv-gestion') {
+                        io.to(arrayTPV[i].id).emit('getNodosSanPedro', lista);
+                        break;
+                    }
+                }                
+            });            
         });
-        /* FIN TESTING ALL NODES SOCKET */
+        /* FIN GET NODOS & IDENTIFICACIÓN DE LOS TPV */
 
         /* DESCARGAR TECLADO */
         socket.on('descargar-teclado', async (data) => {
