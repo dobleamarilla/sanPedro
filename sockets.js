@@ -227,7 +227,7 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
                     for (let i = 0; i < data.arrayTickets[j].lista.length; i++)
                     {
                         if (data.arrayTickets[j]._id == 50792) {
-                            console.log(data.arrayTickets[j]._id);
+                            console.log("Buscar 121 ", data.arrayTickets[j]._id);
                         }   
                         if (data.arrayTickets[j].tipoPago == 'TARJETA')
                         {
