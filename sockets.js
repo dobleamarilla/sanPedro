@@ -192,6 +192,7 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
 //------------------------------------------------------------------
         socket.on('sincronizar-tickets-tocgame', async (data)=>{
             try{
+
                 for(let j = 0; j < data.arrayTickets.length; j++)
                 {
                     let sql = '';
@@ -225,7 +226,9 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
                     let nombreTabla = `[V_Venut_${year}-${month}]`;
                     for (let i = 0; i < data.arrayTickets[j].lista.length; i++)
                     {
-                        
+                        if (data.arrayTickets[j]._id == 50792) {
+                            console.log(data.arrayTickets[j]._id);
+                        }   
                         if (data.arrayTickets[j].tipoPago == 'TARJETA')
                         {
                             campoOtros = '[Visa]';
