@@ -140,12 +140,11 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
                 token: socket.handshake.query['token']
             });
         }
-
+        
         getNodosSanPedro(arrayTPV).then((lista) => {
             for (let i = 0; i < arrayTPV.length; i++) {
                 if (arrayTPV[i].token == 'tpv-gestion') {
                     io.to(arrayTPV[i].id).emit('getNodosSanPedro', lista);
-                    break;
                 }
             }                
         });
@@ -225,10 +224,7 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
     
                     let nombreTabla = `[V_Venut_${year}-${month}]`;
                     for (let i = 0; i < data.arrayTickets[j].lista.length; i++)
-                    {
-                        if (data.arrayTickets[j]._id == 50792) {
-                            console.log("Buscar 121 ", data.arrayTickets[j]._id);
-                        }   
+                    {  
                         if (data.arrayTickets[j].tipoPago == 'TARJETA')
                         {
                             campoOtros = '[Visa]';
@@ -950,7 +946,6 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
                 for (let i = 0; i < arrayTPV.length; i++) {
                     if (arrayTPV[i].token == 'tpv-gestion') {
                         io.to(arrayTPV[i].id).emit('getNodosSanPedro', lista);
-                        break;
                     }
                 }                
             });
@@ -959,12 +954,7 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
         /* GET NODOS & IDENTIFICACIÓN DE LOS TPV */
         socket.on('getNodosSanPedro', () => {
             getNodosSanPedro(arrayTPV).then((lista) => {
-                for (let i = 0; i < arrayTPV.length; i++) {
-                    if (arrayTPV[i].tpv == 'tpv-gestion') {
-                        io.to(arrayTPV[i].id).emit('getNodosSanPedro', lista);
-                        break;
-                    }
-                }                
+                io.to(socket.id).emit('getNodosSanPedro', lista);              
             });            
         });
         /* FIN GET NODOS & IDENTIFICACIÓN DE LOS TPV */
