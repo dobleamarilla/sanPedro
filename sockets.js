@@ -846,6 +846,7 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
         socket.on('actualizarTocGameIndividual'), ((socketId) => {
             io.to(socketId).emit('actualizarTocGame');
         });
+        
         /* FIN ACTUALIZAR TOC INDIVIDUAL NUEVA*/
         
         /* ACTUALIZAR TOC INDIVIDUAL */
