@@ -842,6 +842,12 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
             }
         });
 
+        /*ACTUALIZAR TOC INDIVIDUAL NUEVA */
+        socket.on('actualizarTocGameIndividual'), ((socketId) => {
+            io.to(socketId).emit('actualizarTocGame');
+        });
+        /* FIN ACTUALIZAR TOC INDIVIDUAL NUEVA*/
+        
         /* ACTUALIZAR TOC INDIVIDUAL */
         socket.on('peticion-actualizar-toc', (stringLicencia) => {
             io.emit('orden-actualizar-toc', stringLicencia);
