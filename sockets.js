@@ -1027,7 +1027,6 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
                 fecha = '1899-12-30 00:00:00.000';
                 periodo = getPeriodo(fechaEncargo);
                 detalle = `[DataCreat:${formatDate('fechaCreacion')}][Accio:Fa][Id:${idCliente}][ACompte:${dejaACuenta}]`;
-                //[DataCreat:09-03-17 06:59][Accio:Fa][Id:CliBoti_792_20170309065912][ACompte:0][Comentari:Viene Sobre Las 11][CadaDia:0,1,0,0,1,0,0]
             }
             if(comentario !== '') detalle += `[Comentari:${comentario}]`;
             if(periodo !== '') detalle += `[CadaDia:${periodo.replace(/\./g, ',')}]`;
