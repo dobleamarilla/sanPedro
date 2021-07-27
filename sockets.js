@@ -1001,7 +1001,87 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
             });
         });
         /* FIN DESCARGAR TECLADO */
-
+        /* CREAR ENCARGO */
+        socket.on('crear-encargo', (data) => {
+            // ESTA FECHA SE USA PARA EL NOMBRE DE LA TABLA
+            let d = new Date();
+            let month = '' + (d.getMonth() + 1),
+                year = d.getFullYear().toString();
+            if(month.length < 2) month = `0${month}`;
+            let {articulos, comentario, dejaACuenta, fechaEncargo, idCliente, idDependienta, nombreCliente, precioEncargo, codigoTienda} = data;
+            let id = `Id_Enc_${formatIdDate()}_${codigoTienda}_${idDependienta}`;
+            let cliente = `[Id:${idCliente}]`;
+            let fecha = '';
+            let detalle = '';
+            let periodo = "''";
+            if(fechaEncargo[1] === 'am' || fechaEncargo[1] === 'pm') {
+                let hora = fechaEncargo[1] === 'am' ? '11:00:00.000' : '16:00:00.000';
+                fecha = `${formatDate()} ${hora}`;
+                detalle = `[DataCreat:${formatDate('fechaCreacion')}][Accio:Fa][Id:${idCliente}][ACompte:${dejaACuenta}][Dia:${formatDate('fechaEntrega')}][Hora:${hora.substr(0, 5)}]`;
+            } else if(fechaEncargo[0] > 10) {
+                fecha = `${formatDate('diaEnConcreto', fechaEncargo)}`;
+                detalle = `[DataCreat:${formatDate('fechaCreacion')}][Accio:Fa][Id:${idCliente}][ACompte:${dejaACuenta}][Dia:${formatDate('fechaEntrega')}][Hora:${new Date(fechaEncargo).getHours()}:${new Date(fechaEncargo).getMinutes()}]`;
+            } else {
+                year = 1899;
+                month = 12;
+                fecha = '1899-12-30 00:00:00.000';
+                periodo = getPeriodo(fechaEncargo);
+                detalle = `[DataCreat:${formatDate('fechaCreacion')}][Accio:Fa][Id:${idCliente}][ACompte:${dejaACuenta}]`;
+                //[DataCreat:09-03-17 06:59][Accio:Fa][Id:CliBoti_792_20170309065912][ACompte:0][Comentari:Viene Sobre Las 11][CadaDia:0,1,0,0,1,0,0]
+            }
+            if(comentario !== '') detalle += `[Comentari:${comentario}]`;
+            if(periodo !== '') detalle += `[CadaDia:${periodo.replace(/\./g, ',')}]`;
+            for(let index in articulos) {
+                let {_id, unidades, subtotal} = articulos[index];
+                let importe = subtotal / unidades;
+                let sql = `INSERT INTO [V_Encarre_${year}-${month}] VALUES ('${id}', ${idDependienta}, '${cliente}', '${fecha}', 0, 2, ${dejaACuenta}, ${codigoTienda}, '${detalle}', '${periodo}', ${_id}, ${unidades}, ${importe}, 0, '${comentario}', '${comentario}', 'No')`;
+                conexion.recHit(data.database, sql).then((info) => {
+                    socket.emit('res-crear-encargo', 'Encargo guardado correctamente');
+                })
+            }
+        })
+        /* FIN CREAR ENCARGO */
+        
+        
+        function formatDate(tipo = '', diaEnConcreto = undefined) {
+            let d = diaEnConcreto === undefined ? new Date() : new Date(diaEnConcreto);
+            let day = '' + d.getDate(),
+                month = '' + (d.getMonth() + 1),
+                year = d.getFullYear();
+            if(month.length < 2) month = `0${month}`;
+            if(day.length < 2) day = `0${day}`;
+            if(tipo === 'fechaCreacion' || tipo === 'diaEnConcreto') {
+                let minutes = d.getMinutes().toString(),
+                    hour = d.getHours().toString();
+                if(minutes.length < 2) minutes = `0${minutes}`;
+                if(hour.length < 2) hour = `0${hour}`;
+                if(tipo === 'diaEnConcreto') return `${[year, month, day].join('-')} ${hour}:${minutes}:00.000`;
+                return `${[day, month, year.toString().substr(2)].join('-')} ${hour}:${minutes}`;
+            }
+            return [year, month, day].join('-');
+        }
+        function formatIdDate() {
+            let d = new Date();
+            let day = '' + d.getDate(),
+                month = '' + (d.getMonth() + 1),
+                year = d.getFullYear(),
+                twoDigitsYear = d.getFullYear().toString().substr(2),
+                seconds = d.getSeconds(),
+                minutes = d.getMinutes(),
+                hour = d.getHours();
+            if(month.length < 2) month = `0${month}`;
+            if(day.length < 2) day = `0${day}`;
+            return [year, month, day, twoDigitsYear, hour, minutes, seconds].join('');
+            // yyyymmddyyhhmmss
+        }
+        function getPeriodo(dias) {
+            let periodo = [0, 0, 0, 0, 0, 0, 0];
+            if(dias === []) return periodo.join('.');
+            for(let i = 0; i < dias.length; i++) {
+                periodo[dias[i]] = 1;
+            }
+            return periodo.join('.');
+        }
         /* OTRA */
         socket.on('cargar-todo', (data) => 
         {
@@ -1092,5 +1172,6 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
             });
         });
     });
+   
 }
 module.exports.loadSockets = loadSockets;
