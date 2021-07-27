@@ -1079,8 +1079,6 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
             }
         })
         /* FIN CREAR ENCARGO */
-        
-        
         /* OTRA */
         socket.on('cargar-todo', (data) => 
         {
