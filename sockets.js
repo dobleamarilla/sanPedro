@@ -857,8 +857,8 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
                                     nombreTienda: data2.recordset[0].Nom,
                                     codigoTienda: data2.recordset[0].codigoTienda,
                                     ultimoTicket: data.recordset[0].ultimoIdTicket,
-                                    botonesConPrecios: dataF.recordset[0].Valor,
-                                    prohibirBuscarArticulos: dataF.recordset[1].Valor,
+                                    botonesConPrecios: dataF.recordset[0] ? dataF.recordset[0].Valor : 'No',
+                                    prohibirBuscarArticulos: dataF.recordset[1] ? dataF.recordset[1].Valor : 'Si',
                                     token: data.recordset[0].token
                                 });
                             })
