@@ -322,35 +322,42 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
                         IF NOT EXISTS (SELECT * FROM ${nombreTabla} WHERE botiga = ${data.parametros.codigoTienda} AND Num_tick = ${data.arrayTickets[j]._id})
                             BEGIN
                                 ${sql}
+                                SELECT 'OK' as resultado;
+                            END
+                        ELSE
+                            BEGIN
+                                SELECT 'YA_EXISTE' as resultado;
                             END
                     `
 
                     conexion.recHit(data.parametros.database, sql).then(res => {
-                        if(res.rowsAffected.length > 0) {
+                        if (res.recordset[0].resultado == 'YA_EXISTE') { // res.recordset[0].resultado == "YA_EXISTE") {
                             socket.emit('confirmarEnvioTicket', {
                                 idTicket: data.arrayTickets[j]._id
                             });
-                            let sql2 = `IF EXISTS (SELECT * FROM tocGameInfo WHERE licencia = ${data.parametros.licencia}) 
-                                            BEGIN
-                                                IF ((SELECT ultimoIdTicket FROM tocGameInfo WHERE licencia = ${data.parametros.licencia}) < ${data.arrayTickets[j]._id})
-                                                    BEGIN
-                                                        UPDATE tocGameInfo SET ultimoIdTicket = ${data.arrayTickets[j]._id}, ultimaConexion = ${Date.now()}, nombreTienda = '${data.parametros.nombreTienda}' WHERE licencia = ${data.parametros.licencia}
-                                                    END
-                                                END
-                                        ELSE
-                                            BEGIN
-                                                INSERT INTO tocGameInfo (licencia, bbdd, ultimoIdTicket, codigoInternoTienda, nombreTienda, token, version, ultimaConexion) 
-                                                    VALUES (${data.parametros.licencia}, '${data.parametros.database}', ${data.arrayTickets[j]._id}, ${data.parametros.codigoTienda}, '${data.parametros.nombreTienda}', NEWID(), '2.0.0', ${Date.now()})
-                                            END`;
-                            
-                            conexion.recHit('Hit', sql2);
                         } else {
-                            if (res.recordset[0].resultado == "YA_EXISTE") {
+                            if(res.rowsAffected.length > 0 && res.recordset[0].resultado == 'OK') {
                                 socket.emit('confirmarEnvioTicket', {
                                     idTicket: data.arrayTickets[j]._id
                                 });
+                                let sql2 = `IF EXISTS (SELECT * FROM tocGameInfo WHERE licencia = ${data.parametros.licencia}) 
+                                                BEGIN
+                                                    IF ((SELECT ultimoIdTicket FROM tocGameInfo WHERE licencia = ${data.parametros.licencia}) < ${data.arrayTickets[j]._id})
+                                                        BEGIN
+                                                            UPDATE tocGameInfo SET ultimoIdTicket = ${data.arrayTickets[j]._id}, ultimaConexion = ${Date.now()}, nombreTienda = '${data.parametros.nombreTienda}' WHERE licencia = ${data.parametros.licencia}
+                                                        END
+                                                    END
+                                            ELSE
+                                                BEGIN
+                                                    INSERT INTO tocGameInfo (licencia, bbdd, ultimoIdTicket, codigoInternoTienda, nombreTienda, token, version, ultimaConexion) 
+                                                        VALUES (${data.parametros.licencia}, '${data.parametros.database}', ${data.arrayTickets[j]._id}, ${data.parametros.codigoTienda}, '${data.parametros.nombreTienda}', NEWID(), '2.0.0', ${Date.now()})
+                                                END`;
+                                
+                                conexion.recHit('Hit', sql2);
+                            } else {
+                                console.log("Caso sin importancia");
                             }
-                        }
+                        }                        
                     }).catch((err) => {
                         console.log(err);
                         if (data.parametros.codigoTienda == 879) {
