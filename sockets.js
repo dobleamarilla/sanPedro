@@ -291,6 +291,11 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
                         
                         if(data.arrayTickets[j].tipoPago === "CONSUMO_PERSONAL")
                         {
+                            // Esto es chapuza, arreglarlo!!!
+                            if (data.arrayTickets[j].idTrabajador == undefined) {
+                                data.arrayTickets[j].idTrabajador = 975;
+                            }
+                
                             var idFinalTrabajadorAux = await conexion.recHit(data.parametros.database, `SELECT valor FROM dependentesExtes WHERE id = ${data.arrayTickets[j].idTrabajador} AND nom = 'CODICFINAL'`);//await conexion.recHit(data.parametros.database, `SELECT valor FROM dependentesExtes WHERE id = ${data.arrayTickets[j].idTrabajador} AND nom = 'CODICFINAL'`).recordset[0].valor;
                             
                             var idFinalTrabajador = `[Id:${idFinalTrabajadorAux.recordset[0].valor}]`;
@@ -758,7 +763,9 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
                 let sqlAna = '';
                 let sqlAna2 = '';
                 let nombreTabla = '[V_Moviments_' + finalYear + '-' + finalMonth + ']';
-    
+                if (data.info.idDependienta == undefined) {
+                    data.info.idDependienta = 975;
+                }
                 sqlZGJ = `
                             INSERT INTO ${nombreTabla} (Botiga, Data, Dependenta, Tipus_moviment, Import, Motiu) VALUES (${data.parametros.codigoTienda}, CONVERT(datetime, '${finalYear}-${finalMonth}-${finalDay} ${finalHours}:${finalMinutes}:${finalSeconds}', 120), ${data.info.idDependienta}, 'Z', ${data.info.calaixFetZ}, '');
                             INSERT INTO ${nombreTabla} (Botiga, Data, Dependenta, Tipus_moviment, Import, Motiu) VALUES (${data.parametros.codigoTienda}, CONVERT(datetime, '${finalYear}-${finalMonth}-${finalDay} ${finalHours}:${finalMinutes}:${finalSeconds}', 120), ${data.info.idDependienta}, 'G', ${nClientes}, '');
