@@ -676,7 +676,7 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
 
 
                 sql = `INSERT INTO ${nombreTabla} (Botiga, Data, Dependenta, Tipus_moviment, Import, Motiu) VALUES (${data.parametros.codigoTienda}, CONVERT(datetime, '${year}-${month}-${day} ${hours}:${minutes}:${seconds}', 120), ${data.info.idTrabajador}, '${(data.info.tipo == "SALIDA") ? 'O':'A'}', ${(data.info.tipo == "SALIDA") ? -data.info.valor : data.info.valor}, '${concepto}');`;
-                if(data.info.codigoBarras != "")
+                if(data.info.codigoBarras != "" && data.info.codigoBarras != undefined)
                 {
                     sqlBarras = `INSERT INTO CodisBarresReferencies (Num, Tipus, Estat, Data, TmSt, Param1, Param2, Param3, Param4) VALUES (${data.info.codigoBarras}, 'Moviments', 'Creat', CONVERT(datetime, '${year}-${month}-${day} ${hours}:${minutes}:${seconds}', 120), CONVERT(datetime, '${year}-${month}-${day} ${hours}:${minutes}:${seconds}', 120), ${data.parametros.licencia}, ${data.info.idTrabajador}, ${-data.info.valor}, '${day}/${month}/${year} ${hours}:${minutes}:${seconds}');`;
                 }
