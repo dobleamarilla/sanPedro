@@ -229,11 +229,7 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
         });
 //------------------------------------------------------------------
         socket.on('sincronizar-tickets-tocgame', async (data)=>{
-            try{
-                if (data.parametros.codigoTienda == 879) {
-                    console.log("111111111111111111111111111111111111111111111111111");
-                }
-                
+            try{              
                 for(let j = 0; j < data.arrayTickets.length; j++)
                 {
                     let sql = '';
@@ -330,17 +326,9 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
                     `
 
                     conexion.recHit(data.parametros.database, sql).then(res => {
-                        if (data.parametros.codigoTienda == 879) {
-                            console.log(sql);
-                            console.log("2222222222222222222222222");
-                        }
                         if(res.rowsAffected.length > 0) {
-                            if (data.parametros.codigoTienda == 879) {
-                                console.log("33333333333333333333333");
-                            }
                             socket.emit('confirmarEnvioTicket', {
-                                idTicket: data.arrayTickets[j]._id,
-                                respuestaSql: res
+                                idTicket: data.arrayTickets[j]._id
                             });
                             let sql2 = `IF EXISTS (SELECT * FROM tocGameInfo WHERE licencia = ${data.parametros.licencia}) 
                                             BEGIN
@@ -356,6 +344,12 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
                                             END`;
                             
                             conexion.recHit('Hit', sql2);
+                        } else {
+                            if (res.recordset[0].resultado == "YA_EXISTE") {
+                                socket.emit('confirmarEnvioTicket', {
+                                    idTicket: data.arrayTickets[j]._id
+                                });
+                            }
                         }
                     }).catch((err) => {
                         console.log(err);
