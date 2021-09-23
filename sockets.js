@@ -230,7 +230,7 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
 //------------------------------------------------------------------
         socket.on('sincronizar-tickets-tocgame', async (data)=>{
             try{
-
+                console.log("111111111111111111111111111111111111111111111111111");
                 for(let j = 0; j < data.arrayTickets.length; j++)
                 {
                     let sql = '';
@@ -327,7 +327,7 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
                     `
 
                     conexion.recHit(data.parametros.database, sql).then(res => {
-
+                        console.log("222222222222222222222222222222222222222222");
                         if(res.rowsAffected.length > 0) {
                             socket.emit('confirmarEnvioTicket', {
                                 idTicket: data.arrayTickets[j]._id,
