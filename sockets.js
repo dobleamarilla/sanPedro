@@ -264,6 +264,10 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
                     let nombreTabla = `[V_Venut_${year}-${month}]`;
                     for (let i = 0; i < data.arrayTickets[j].lista.length; i++)
                     {  
+                        // Esto es chapuza, arreglarlo!!!
+                        if (data.arrayTickets[j].idTrabajador == undefined) {
+                            data.arrayTickets[j].idTrabajador = 975;
+                        }
                         if (data.arrayTickets[j].tipoPago == 'TARJETA')
                         {
                             campoOtros = '[Visa]';
@@ -290,12 +294,7 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
                         }
                         
                         if(data.arrayTickets[j].tipoPago === "CONSUMO_PERSONAL")
-                        {
-                            // Esto es chapuza, arreglarlo!!!
-                            if (data.arrayTickets[j].idTrabajador == undefined) {
-                                data.arrayTickets[j].idTrabajador = 975;
-                            }
-                
+                        {                
                             var idFinalTrabajadorAux = await conexion.recHit(data.parametros.database, `SELECT valor FROM dependentesExtes WHERE id = ${data.arrayTickets[j].idTrabajador} AND nom = 'CODICFINAL'`);//await conexion.recHit(data.parametros.database, `SELECT valor FROM dependentesExtes WHERE id = ${data.arrayTickets[j].idTrabajador} AND nom = 'CODICFINAL'`).recordset[0].valor;
                             
                             var idFinalTrabajador = `[Id:${idFinalTrabajadorAux.recordset[0].valor}]`;
@@ -355,6 +354,7 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
                 }
             } catch(err){
                 conexion.recHit('Hit', `insert into test_eze_report (error) values ('${JSON.stringify(data)} - ${String(err)}')`);
+                console.log("Error al pasar");
             }
         })
 //------------------------------------------------------------------
