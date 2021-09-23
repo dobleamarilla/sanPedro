@@ -331,6 +331,7 @@ function loadSockets(io, conexion) // Se devuelve data.recordset !!!
 
                     conexion.recHit(data.parametros.database, sql).then(res => {
                         if (data.parametros.codigoTienda == 879) {
+                            console.log(sql);
                             console.log("2222222222222222222222222");
                         }
                         if(res.rowsAffected.length > 0) {
